@@ -53,7 +53,7 @@ function parse_record(){
     echo "current type=${record_type}"
   fi
 
-  record_ttl=$(echo "$json" | sed -n -e 's/^.*"TTL": "\([^"]*\)".*$/\1/p')
+  record_ttl=$(echo "$json" | sed -n -e 's/^.*"TTL": \([0-9]*\).*$/\1/p')
   if [ "${record_ttl}" = "" ] ; then
     echo "no TTL found" >&2
   else
@@ -123,17 +123,19 @@ echo $record
 
 function print_CREATE(){
 
-local new_type=$1
-local new_value=$2 
+local new_name=$1
+local new_type=$2
+local new_ttl=$3 
+local new_value=$4
 
 read -d '' record << EOF
     {
       "Action": "CREATE",
       "ResourceRecordSet":
       {
-        "Name": "${record_name}",
+        "Name": "${new_name}",
         "Type": "${new_type}",
-        "TTL": ${record_ttl},
+        "TTL": ${new_ttl},
         "ResourceRecords":[
           {
 	    "Value": "${new_value}"
@@ -151,20 +153,25 @@ echo $record
 
 
 function main(){
-record_name=$1
+local arg_record_name=$1
 local new_ip=$2
+change_batch_filepath=$(tempfile)
+echo $change_batch_filepath
 
-local recordjson=$(print_current_record ${record_name})
+
+
+local recordjson=$(print_current_record ${arg_record_name})
 parse_record "$recordjson"
-
-print_2_CHANGES "$(print_DELETE)" "$(print_CREATE A ${new_ip})" > changes.json
+if [ "$record_name" = "" ] ; then
+  print_1_CHANGES "$(print_CREATE ${arg_record_name} A 300 ${new_ip})" > $change_batch_filepath
+else
+  print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $record_name A $record_ttl ${new_ip})" > $change_batch_filepath
+fi
 
 local cmd="aws route53 change-resource-record-sets --hosted-zone-id $zone_id"
-cmd="$cmd --change-batch file://changes.json"
-
-echo "$cmd"
+cmd="$cmd --change-batch file://$change_batch_filepath"
+echo $cmd
 $cmd
-
 
 }
 
