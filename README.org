@@ -1,0 +1,11 @@
+* route53cmd
+
+A route53 utility
+
+: route53cmd 
+: --zone-id
+: --name
+: --value
+: --type
+: --ttl
+
