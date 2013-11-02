@@ -1,6 +1,5 @@
 #!/bin/bash
 
-zone_id="Z3DQNPKIXZKPS5"
 reouterip=""
 record_name=""
 record_ttl=300
@@ -12,7 +11,8 @@ function print_routerip() {
 }
 
 function print_current_record(){
-  local name=$1
+  local zone_id=$1
+  local name=$2
 
   local cmd="aws route53 list-resource-record-sets --hosted-zone-id $zone_id"
   cmd="$cmd --start-record-name ${name} --max-items 1"
@@ -30,7 +30,8 @@ function print_current_record(){
 
 function parse_record(){
 
-  local json=$1
+  local zone_id=$1
+  local json=$2
 
   record_name=$(echo "$json" | sed -n -e 's/^.*"Name": "\([^"]*\)".*$/\1/p')
   if [ "$record_name" = "" ] ; then
@@ -150,30 +151,31 @@ echo $record
 }
 
 
-
-
 function main(){
-local arg_record_name=$1
-local new_ip=$2
-change_batch_filepath=$(tempfile)
-echo $change_batch_filepath
+  local arg_zone_id=$1
+  local arg_record_name=$2
+  local new_ip=$3
+  local change_batch_filepath=$(tempfile)
 
+  local recordjson=$(print_current_record ${arg_zone_id} ${arg_record_name})
+  parse_record ${arg_zone_id} "$recordjson"
+  if [ "$record_name" = "" ] ; then
+    print_1_CHANGES \
+    "$(print_CREATE ${arg_record_name} A 300 ${new_ip})" > \
+    $change_batch_filepath
+  else
+    print_2_CHANGES "$(print_DELETE)" \
+    "$(print_CREATE $record_name A $record_ttl ${new_ip})" > \
+    $change_batch_filepath
+  fi
 
+  aws route53 change-resource-record-sets \
+  --hosted-zone-id $arg_zone_id --change-batch \
+  file://$change_batch_filepath
 
-local recordjson=$(print_current_record ${arg_record_name})
-parse_record "$recordjson"
-if [ "$record_name" = "" ] ; then
-  print_1_CHANGES "$(print_CREATE ${arg_record_name} A 300 ${new_ip})" > $change_batch_filepath
-else
-  print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $record_name A $record_ttl ${new_ip})" > $change_batch_filepath
-fi
-
-local cmd="aws route53 change-resource-record-sets --hosted-zone-id $zone_id"
-cmd="$cmd --change-batch file://$change_batch_filepath"
-echo $cmd
-$cmd
+  rm $change_batch_filepath
 
 }
 
-main $1 $2
-#print_current_record $1
+main $1 $2 $3
+
