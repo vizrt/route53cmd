@@ -17,12 +17,14 @@ function print_current_record(){
   local cmd="aws route53 list-resource-record-sets --hosted-zone-id $zone_id"
   cmd="$cmd --start-record-name ${name} --max-items 1"
   json=$($cmd)
-  record_name=$(echo "$json" | sed -n -e 's/^.*\"Name\": \"\(.*\)\".*$/\1/p')
+  record_name=$(echo "$json" | sed -n -e 's/^.*"Name": "\([^"]*\)".*$/\1/p')
   match=$(echo "$record_name" | sed -n -e "/${name}/p") 
-  if [ -n $match ] ; then
-    echo $json
-  else
+  if [ "$match" = "" ] ; then
     echo "no record found for $name" >&2  
+    return 1
+  else
+    echo $json
+    return 0
   fi
 }
 
@@ -30,30 +32,33 @@ function parse_record(){
 
   local json=$1
 
-  record_name=$(echo "$json" | sed -n -e 's/^.*\"Name\": \"\(.*\)\".*$/\1/p')
-  if [ -n $record_name ] ; then
-    echo "current name=${record_name}"
-  else
+  record_name=$(echo "$json" | sed -n -e 's/^.*"Name": "\([^"]*\)".*$/\1/p')
+  if [ "$record_name" = "" ] ; then
     echo "no Name found" >&2
-
-  record_value=$(echo "$json" | sed -n -e 's/^.*\"Value\": \"\(.*\)\".*$/\1/p')
-  if [ -n ${record_value} ] ; then
-    echo "current value=${record_value}"
   else
+    echo "current name=${record_name}"
+  fi
+
+  record_value=$(echo "$json" | sed -n -e 's/^.*"Value": "\([^"]*\)".*$/\1/p')
+  if [ "${record_value}" = "" ] ; then
     echo "no Value found" >&2
-
-  record_type=$(echo "$json" | sed -n -e 's/^.*\"Type\": "\(.*\)".*$/\1/p')
-  if [ -n ${record_type} ] ; then
-    echo "current type=${record_type}"
   else
+    echo "current value=${record_value}"
+  fi
+
+  record_type=$(echo "$json" | sed -n -e 's/^.*"Type": "\([^"]*\)".*$/\1/p')
+  if [ "${record_type}" = "" ] ; then
     echo "no Type found" >&2
-
-  record_ttl=$(echo "$json" | sed -n -e 's/^.*\"TTL\": \([0-9]*\).*$/\1/p')
-  if [ -n ${record_ttl} ] ; then
-    echo "current ttl=${record_ttl}"
   else
-    echo "no TTL found" >&2
+    echo "current type=${record_type}"
+  fi
 
+  record_ttl=$(echo "$json" | sed -n -e 's/^.*"TTL": "\([^"]*\)".*$/\1/p')
+  if [ "${record_ttl}" = "" ] ; then
+    echo "no TTL found" >&2
+  else
+    echo "current ttl=${record_ttl}"
+  fi
 
 }
 
@@ -164,4 +169,4 @@ $cmd
 }
 
 main $1 $2
-
+#print_current_record $1
