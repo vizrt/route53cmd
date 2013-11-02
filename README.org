@@ -10,4 +10,4 @@ A route53 utility
 : --ttl
 
 
-make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your ROUT53 zone
+make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your ROUTE53 zone
