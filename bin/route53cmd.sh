@@ -7,39 +7,53 @@ record_ttl=300
 record_type=""
 record_value=""
 
-function routerip() {
-  echo "62.101.198.35"
-#  curl "ifconfig.me"
+function print_routerip() {
+  curl ifconfig.me
 }
 
-function current_record(){
-  name=$1
+function print_current_record(){
+  local name=$1
 
   local cmd="aws route53 list-resource-record-sets --hosted-zone-id $zone_id"
-  cmd="$cmd --start-record-name ${name} --max-items 12"
-#  echo $cmd
-  $cmd
-  
+  cmd="$cmd --start-record-name ${name} --max-items 1"
+  json=$($cmd)
+  record_name=$(echo "$json" | sed -n -e 's/^.*\"Name\": \"\(.*\)\".*$/\1/p')
+  match=$(echo "$record_name" | sed -n -e "/${name}/p") 
+  if [ -n $match ] ; then
+    echo $json
+  else
+    echo "no record found for $name" >&2  
+  fi
 }
 
 function parse_record(){
 
-  local name=$1
-  local json=$2
-  echo $json
+  local json=$1
+
   record_name=$(echo "$json" | sed -n -e 's/^.*\"Name\": \"\(.*\)\".*$/\1/p')
-  match=$(echo "$record_name" | sed -n -e "/${name}/p") 
-  if [ -n $match ] ; then
-    record_value=$(echo "$json" | sed -n -e 's/^.*\"Value\": \"\(.*\)\".*$/\1/p')
-    record_type=$(echo "$json" | sed -n -e 's/^.*\"Type\": "\(.*\)".*$/\1/p')
-    record_ttl=$(echo "$json" | sed -n -e 's/^.*\"TTL\": \([0-9]*\).*$/\1/p')
-    echo "$name is found"
+  if [ -n $record_name ] ; then
+    echo "current name=${record_name}"
+  else
+    echo "no Name found" >&2
+
+  record_value=$(echo "$json" | sed -n -e 's/^.*\"Value\": \"\(.*\)\".*$/\1/p')
+  if [ -n ${record_value} ] ; then
     echo "current value=${record_value}"
+  else
+    echo "no Value found" >&2
+
+  record_type=$(echo "$json" | sed -n -e 's/^.*\"Type\": "\(.*\)".*$/\1/p')
+  if [ -n ${record_type} ] ; then
     echo "current type=${record_type}"
+  else
+    echo "no Type found" >&2
+
+  record_ttl=$(echo "$json" | sed -n -e 's/^.*\"TTL\": \([0-9]*\).*$/\1/p')
+  if [ -n ${record_ttl} ] ; then
     echo "current ttl=${record_ttl}"
   else
-    echo "$name not found"
-  fi
+    echo "no TTL found" >&2
+
 
 }
 
@@ -135,8 +149,8 @@ function main(){
 record_name=$1
 local new_ip=$2
 
-local recordjson=$(current_record ${record_name})
-parse_record "$record_name" "$recordjson"
+local recordjson=$(print_current_record ${record_name})
+parse_record "$recordjson"
 
 print_2_CHANGES "$(print_DELETE)" "$(print_CREATE A ${new_ip})" > changes.json
 
