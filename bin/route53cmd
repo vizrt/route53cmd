@@ -1,10 +1,16 @@
 #!/bin/bash
 
+# This command supports setting aws route53 records by using the AWS CLI utility
+# If the record exists it will delete it and recreate it.
+# The command will do nothting if there are no changes to be done.
+
 arg_zone_id=""
 arg_name=""
 arg_ttl=0
 arg_type=""
 arg_value=""
+
+arg_option_force=0
 
 current_name=""
 current_ttl=0
@@ -150,7 +156,7 @@ function get_user_input() {
 
   for el in $@; do
     if [[ "$el" == "-h" || "$el" == "--help" ]]; then
-      echo "usage -z|--zone-id <zoneid> -n|--name <dns rcord name> -v|--value <dns record value> -t|--type <dns record type> (default A) --ttl <time to live> (default 300) -h|--help (this message)"
+      echo "usage -z|--zone-id <zoneid> -n|--name <dns rcord name> -v|--value <dns record value> -t|--type <dns record type> (default A) --ttl <time to live> (default 300) -h|--help (this message) --force"
       exit 0
     elif [[ "$el" == "-z" || "$el" == "--zone-id" ]]; then
       next_is_zone_id=1
@@ -158,6 +164,8 @@ function get_user_input() {
       next_is_name=1
     elif [[ "$el" == "-v" || "$el" == "--value" ]]; then
       next_is_value=1
+    elif [[ "$el" == "--force" ]]; then
+      arg_option_force=1
     elif [[ "$el" == "-t" || "$el" == "--type" ]]; then
       next_is_type=1
     elif [ "$el" = "--ttl" ]; then
@@ -214,11 +222,33 @@ function get_user_input() {
   fi
 }
 
+function exit_if_no_change_needed(){
+
+  if [ "$arg_ttl" != "$current_ttl" ]; then
+    return
+  elif [ "$arg_type" != "$current_type" ]; then
+    return
+  elif [ "$arg_value" != "$current_value" ]; then
+    return
+  fi
+
+  if [ $arg_option_force -eq 0 ]; then
+    echo "no changes needed on AWS route53"
+    exit
+  else
+    echo "forcing change (no changes needed on AWS route53)" >&1
+  fi  
+}
+
+
+
 function main(){
   local change_batch_filepath=$(tempfile)
 
   local recordjson=$(print_current_record ${arg_zone_id} ${arg_name})
   parse_record "$recordjson"
+  exit_if_no_change_needed
+
   if [ $? -ne 0 ] ; then
     print_1_CHANGES \
     "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${arg_value})" > \
