@@ -8,6 +8,7 @@ A route53 utility
 : -v|--value <dns record value> \
 : -t|--type <dns record type> (default A) \
 : --ttl <time to live> (default 300) \
+: --force \
 : -h|--help (this message)
 
 make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your ROUTE53 zone
