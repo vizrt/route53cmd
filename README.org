@@ -2,12 +2,12 @@
 
 A route53 utility
 
-: route53cmd 
-: --zone-id
-: --name
-: --value
-: --type
-: --ttl
-
+: route53cmd \
+: -z|--zone-id <zoneid> \
+: -n|--name <dns rcord name> \
+: -v|--value <dns record value> \
+: -t|--type <dns record type> (default A) \
+: --ttl <time to live> (default 300) \
+: -h|--help (this message)
 
 make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your ROUTE53 zone
