@@ -246,30 +246,28 @@ function main(){
   local change_batch_filepath=$(tempfile)
 
   local recordjson=$(print_current_record ${arg_zone_id} ${arg_name})
-  parse_record "$recordjson"
-  exit_if_no_change_needed
+  if [ "$recordjson" != "" ] ; then
+    parse_record "$recordjson"
+    exit_if_no_change_needed
 
-  if [ $? -ne 0 ] ; then
-    print_1_CHANGES \
-    "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${arg_value})" > \
-    $change_batch_filepath
-  else
-    print_2_CHANGES "$(print_DELETE)" \
-    "$(print_CREATE $current_name $arg_type $arg_ttl ${arg_value})" > \
-    $change_batch_filepath
+    print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $current_name $arg_type $arg_ttl ${arg_value})" > $change_batch_filepath
+  else  
+    print_1_CHANGES "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${arg_value})" > $change_batch_filepath
   fi
 
-  local aws_command="aws route53 change-resource-record-sets --hosted-zone-id ${arg_zone_id} --change-batch file://${change_batch_filepath}"
+  local aws_command="aws route53 change-resource-record-sets"
+  aws_command="$aws_command --hosted-zone-id ${arg_zone_id}"
+  aws_command="$aws_command --change-batch file://${change_batch_filepath}"
+
   $aws_command
+  local ret_aws_command=$?
 
-  local ret_aws=$?
-
-  if [ $ret_aws -eq 0 ]; then
+  if [ $ret_aws_command -eq 0 ]; then
     rm $change_batch_filepath
     return $?
   else
     echo "failed(${ret_aws}): $aws_command" >&2
-    return $ret_aws
+    return $ret_aws_command
   fi
 }
 
