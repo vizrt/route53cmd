@@ -17,15 +17,23 @@ current_ttl=0
 current_type=""
 current_value=""
 
+function print_aws_command(){
+  if [ "$FILEPATH_TO_AWSCLI" == "" ]; then
+    echo -n "aws"
+  else
+    echo -n "$FILEPATH_TO_AWSCLI"
+  fi
+}
+
 function print_current_record(){
   local zone_id=$1
   local name=$2
 
-  json=$(aws route53 list-resource-record-sets  --hosted-zone-id $zone_id --start-record-name  ${name} --max-items 1)
+  json=$($(print_aws_command) route53 list-resource-record-sets  --hosted-zone-id $zone_id --start-record-name  ${name} --max-items 1)
 
   record_name=$(echo "$json" | sed -n -e 's/^.*"Name": "\([^"]*\)".*$/\1/p')
   match=$(echo "$record_name" | sed -n -e "/${name}/p") 
-  if [ "$match" = "" ] ; then
+  if [ "$match" == "" ] ; then
     echo "no record found for $name" >&2  
     return 1
   else
@@ -52,7 +60,7 @@ function print_sed_from_string() {
   local symbol=$3
 
   local output=$(echo "$string" | sed -n -e "s/${regex}/\1/p")
-  if [ "$output" = "" ]; then
+  if [ "$output" == "" ]; then
     echo "No ${symbol} found" >&2
     return 1
   else
@@ -168,7 +176,7 @@ function get_user_input() {
       arg_option_force=1
     elif [[ "$el" == "-t" || "$el" == "--type" ]]; then
       next_is_type=1
-    elif [ "$el" = "--ttl" ]; then
+    elif [ "$el" == "--ttl" ]; then
       next_is_ttl=1
     elif [ $next_is_zone_id -eq 1 ]; then
       arg_zone_id=$el
@@ -190,27 +198,27 @@ function get_user_input() {
 
   local errors=0
 
-  if [ "$arg_zone_id" = "" ] ; then
+  if [ "$arg_zone_id" == "" ] ; then
     echo "You must specify a zone id: [a-zA-Z0-9]{5,20}"
     echo "E.g.: $(basename $0) --zone-id Z3DQNPKIXZKPS5"
     errors=1
   fi
 
-  if [ "$arg_name" = "" ] ; then
+  if [ "$arg_name" == "" ] ; then
     echo "You must specify a dns name: [a-zA-Z0-9\.]{1,250}"
     echo "E.g.: $(basename $0) --name yourname.yourdomain.com"
     errors=1
   fi
 
-  if [ "$arg_type" = "" ]; then
+  if [ "$arg_type" == "" ]; then
     arg_type="A"
   fi
 
-  if [ "$arg_ttl" = "0" ]; then
+  if [ "$arg_ttl" == "0" ]; then
     arg_ttl=300
   fi
 
-  if [ "$arg_value" = "" ] ; then
+  if [ "$arg_value" == "" ] ; then
     echo "You must specify a value: {1,500}"
     echo "E.g.: $(basename $0) --value 10.10.10.10"
     errors=1
@@ -255,7 +263,7 @@ function main(){
     print_1_CHANGES "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${arg_value})" > $change_batch_filepath
   fi
 
-  local aws_command="aws route53 change-resource-record-sets"
+  local aws_command="$(print_aws_command) route53 change-resource-record-sets"
   aws_command="$aws_command --hosted-zone-id ${arg_zone_id}"
   aws_command="$aws_command --change-batch file://${change_batch_filepath}"
 
