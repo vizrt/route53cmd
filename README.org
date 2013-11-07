@@ -1,7 +1,6 @@
 * route53cmd
 
-This command updates route53 records by using the [[http://aws.amazon.com/cli/][AWS CLI]] utility
-If the record exists it will delete it and recreate it.
+This command updates route53 records by using the [[http://aws.amazon.com/cli/][AWS CLI]] utility. If the record exists it will delete it and recreate it.
 The command will do nothting if there are no changes to be done.
 
 : route53cmd \
