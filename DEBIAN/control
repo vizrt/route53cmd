@@ -1,0 +1,8 @@
+Package: route53cmd
+Version: VERSION
+Section: base
+Priority: optional
+Architecture: all
+Depends: 
+Maintainer: Thomas Velthoven <tvelthoven@vizrt.com>
+Description: The Route53cmd command updates AWS/Route53 records by using the AWS CLI utility. If the record exists it will delete it and recreate it. The command will do nothing if there are no changes to be done.
