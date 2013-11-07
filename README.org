@@ -1,7 +1,7 @@
 * route53cmd
 
-This command updates route53 records by using the [[http://aws.amazon.com/cli/][AWS CLI]] utility. If the record exists it will delete it and recreate it.
-The command will do nothting if there are no changes to be done.
+This command updates [[http://aws.amazon.com/route53/][AWS/Route53]] records by using the [[http://aws.amazon.com/cli/][AWS CLI]] utility. If the record exists it will delete it and recreate it.
+The command will do nothing if there are no changes to be done.
 
 : route53cmd \
 : -z|--zone-id <zoneid> \
@@ -12,4 +12,4 @@ The command will do nothting if there are no changes to be done.
 : --force \
 : -h|--help (this message)
 
-make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your ROUTE53 zone
+make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your AWS/Route53 zone
