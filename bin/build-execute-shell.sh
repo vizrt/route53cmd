@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 # For release management, add names of branches that you'd like to build packages for here.
-branches="  unstable:unstable:0.1.$BUILD_NUMBER release:stable:1.0.0.$BUILD_NUMBER "
+branches="  unstable:unstable:0.1.$BUILD_NUMBER release:master:1.0.0.$BUILD_NUMBER "
 
 repo_tmp_dir=$(mktemp --dry-run)
 ssh hudson@apt.vizrt.com "mkdir $repo_tmp_dir"
@@ -28,7 +28,7 @@ mkdir target downloads work
 version=$version-1$name
 
 cd downloads
-wget -O - -o /dev/null http://hg.vizrt.internal/hg/vosa-sdp-bootstrapper/archive/$name.tar.gz | tar xz
+wget -O - -o /dev/null https://github.com/vizrt/route53cmd/archive/$name.tar.gz | tar xz
 cd *-$name
 # I'm now in the home directory of the package itself.
 target="../../target"
@@ -38,9 +38,9 @@ mv usr DEBIAN $work
 
 sed -i -e s/VERSION/"$version"/g $work/DEBIAN/control
 
-fakeroot dpkg-deb --build $work $target/vosa-sdp-bootstrapper-$version.deb
+fakeroot dpkg-deb --build $work $target/route53cmd-$version.deb
 
-(cd $target; fakeroot alien --keep-version --to-rpm --scripts vosa-sdp-bootstrapper-$version.deb)
+(cd $target; fakeroot alien --keep-version --to-rpm --scripts route53cmd-$version.deb)
 
 scp $target/*.deb hudson@apt.vizrt.com:${repo_tmp_dir}/
 scp $target/*.rpm hudson@yum.vizrt.com:/var/www/yum.vizrt.com/rpm/
