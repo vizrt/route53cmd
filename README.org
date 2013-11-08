@@ -12,4 +12,29 @@ The command will do nothing if there are no changes to be done.
 : --force \
 : -h|--help (this message)
 
-make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your AWS/Route53 zone
+** Installation
+
+- Follow instructions of AWS to set up a zone on Route53
+- make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your AWS/Route53 zone
+- ensure that the files in /usr/bin are in /usr/bin :-)
+
+*That should do it*
+
+** use route53cmd to do dynamic dns like things
+
+You can use this utility to keep you own dns name pointing to your own ec2 instance.
+
+make sure that the following command returns a fully qualified domain name
+
+: hostname -f
+
+copy /etc/set-local-ec2-dnsname.conf to /etc/ and make sure that you zone_id is set properly
+
+set up a cron job by setting up this file:
+
+/etc/cron.d/set-local-dnsname
+: PATH=/bin:/usr/bin:/usr/local/bin
+: @reboot root /usr/bin/set-local-ec2-dnsname
+
+reboot and look in the log to see if it works:
+: tail -n 50 -f /var/log/set-local-ec2-dnsname.log
