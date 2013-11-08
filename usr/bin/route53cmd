@@ -284,10 +284,18 @@ function exit_if_no_change_needed(){
   fi  
 }
 
+function ensure_awscli_installed(){
+  if [ ! which &> /dev/null aws ]; then 
+    echo pip install aws-cli please
+    exit 1
+  fi
+}
 
 
 function main(){
+
   local change_batch_filepath=$(tempfile)
+
 
   local use_value=${arg_value}
   local use_type=${arg_type}
@@ -342,6 +350,7 @@ function main(){
   fi
 }
 
+ensure_awscli_installed
 get_user_input $@
 main
 exit $?
