@@ -1,6 +1,6 @@
 #!/bin/bash
 export AWS_CONFIG_FILE=/etc/awsconfig.txt
-source /etc/setmyip.conf
+source /etc/set-local-ec2-dnsname.conf
 echo "running setmyip $(date)" &>> /var/log/setmyip.log
 route53cmd --zone-id $zone_id --name local-FQDN --ttl 10 --value ec2-hostname &>> /var/log/setmyip.log
 
