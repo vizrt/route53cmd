@@ -17,6 +17,10 @@ current_ttl=0
 current_type=""
 current_value=""
 
+function print_ec2_public_hostname(){
+  ec2metadata | sed -n -e 's/^public-hostname: \(.*\)$/\1/p' 
+}
+
 function print_aws_command(){
   if [ "$FILEPATH_TO_AWSCLI" == "" ]; then
     echo -n "aws"
@@ -221,6 +225,7 @@ function get_user_input() {
   if [ "$arg_value" == "" ] ; then
     echo "You must specify a value: {1,500}"
     echo "E.g.: $(basename $0) --value 10.10.10.10"
+    echo "E.g.: $(basename $0) --value ec2-public-hostname"
     errors=1
   fi
 
@@ -236,7 +241,7 @@ function exit_if_no_change_needed(){
     return
   elif [ "$arg_type" != "$current_type" ]; then
     return
-  elif [ "$arg_value" != "$current_value" ]; then
+  elif [ "$1" != "$current_value" ]; then
     return
   fi
 
@@ -253,14 +258,28 @@ function exit_if_no_change_needed(){
 function main(){
   local change_batch_filepath=$(tempfile)
 
+  
+  use_value=${arg_value}
+  if [ "${arg_value}" == "ec2-public-hostname" ]; then
+    echo "detecting ec2-public-hostname directive"
+    use_value=$(ec2-public-hostname)
+    if [ $arg_type != "CNAME" ]; then
+      echo "setting type to CNAME and value to ${use_value}"
+      $arg_type = "CNAME"
+    else
+      echo "setting value to ${use_value}"
+    fi
+  fi
+
+
   local recordjson=$(print_current_record ${arg_zone_id} ${arg_name})
   if [ "$recordjson" != "" ] ; then
     parse_record "$recordjson"
-    exit_if_no_change_needed
+    exit_if_no_change_needed $use_value
 
-    print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $current_name $arg_type $arg_ttl ${arg_value})" > $change_batch_filepath
+    print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $current_name $arg_type $arg_ttl ${use_value})" > $change_batch_filepath
   else  
-    print_1_CHANGES "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${arg_value})" > $change_batch_filepath
+    print_1_CHANGES "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${use_value})" > $change_batch_filepath
   fi
 
   local aws_command="$(print_aws_command) route53 change-resource-record-sets"
