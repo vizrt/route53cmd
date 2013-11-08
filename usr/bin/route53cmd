@@ -17,8 +17,34 @@ current_ttl=0
 current_type=""
 current_value=""
 
-function print_ec2_public_hostname(){
-  ec2metadata | sed -n -e 's/^public-hostname: \(.*\)$/\1/p' 
+function print_ec2_hostname(){
+
+  local found_public=0
+  local found_private=0
+  local ec2_hostname=$(ec2metadata | sed -n -e 's/^public-hostname: \(.*\)$/\1/p')
+    if [ "$ec2_hostname" != "" ]; then
+      found_public=1
+    else
+      ec2_hostname=$(ec2metadata | sed -n -e 's/^local-hostname: \(.*\)$/\1/p')
+      if [ "$ec2_hostname" != "" ]; then
+        found_private=1
+      fi
+    fi
+
+    if [ $found_public ] ; then
+      echo "parsed public-hostname from ec2metadata" >&2
+    elif [ $found_private ]; then
+      echo "local-hostname parsed from ec2metadata; public-hostname not found" >&2
+    else
+      echo "no public-hostname or local-hostname found in ec2metadata" >&2
+    fi
+
+    if [ $found_public && $found_private ] ; then
+      return 1
+    else
+      echo $ec2_hostname
+    fi
+
 }
 
 function print_aws_command(){
@@ -225,7 +251,7 @@ function get_user_input() {
   if [ "$arg_value" == "" ] ; then
     echo "You must specify a value: {1,500}"
     echo "E.g.: $(basename $0) --value 10.10.10.10"
-    echo "E.g.: $(basename $0) --value ec2-public-hostname"
+    echo "E.g.: $(basename $0) --value ec2-hostname"
     errors=1
   fi
 
@@ -260,9 +286,8 @@ function main(){
 
   
   use_value=${arg_value}
-  if [ "${arg_value}" == "ec2-public-hostname" ]; then
-    echo "detecting ec2-public-hostname directive"
-    use_value=$(ec2-public-hostname)
+  if [ "${arg_value}" == "ec2-hostname" ]; then
+    use_value=$(print_ec2_hostname)
     if [ $arg_type != "CNAME" ]; then
       echo "setting type to CNAME and value to ${use_value}"
       $arg_type = "CNAME"
