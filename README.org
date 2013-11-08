@@ -13,10 +13,14 @@ The command will do nothing if there are no changes to be done.
 : -h|--help (this message)
 
 ** Installation
+This tool only works on various Linux systems and has only been tested on Ubuntu
 
 - Follow instructions of AWS to set up a zone on Route53
 - make sure you have [[http://aws.amazon.com/cli/][AWS CLI]] installed and working against your AWS/Route53 zone
-- ensure that the files in /usr/bin are in /usr/bin :-)
+- Deploy route53cmd
+  - On Debian/Ubuntu install from apt.vizrt.com
+  - On Redhat/CentOS install from yum.vizrt.com
+  - On others ensure that the files in /usr/bin are in /usr/bin :-)
 
 *That should do it*
 
