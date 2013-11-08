@@ -285,8 +285,8 @@ function exit_if_no_change_needed(){
 }
 
 function ensure_awscli_installed(){
-  if [ ! which &> /dev/null aws ]; then 
-    echo pip install aws-cli please
+  if ! which &> /dev/null aws ; then 
+    echo pip install awscli please
     exit 1
   fi
 }
