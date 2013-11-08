@@ -17,6 +17,10 @@ current_ttl=0
 current_type=""
 current_value=""
 
+function print_local_FQDN(){
+  hostname -f
+}
+
 function print_ec2_hostname(){
 
   local found_public=0
@@ -39,10 +43,11 @@ function print_ec2_hostname(){
       echo "no public-hostname or local-hostname found in ec2metadata" >&2
     fi
 
-    if [ $found_public && $found_private ] ; then
-      return 1
-    else
+    if [ $found_public -o $found_private ] ; then
       echo $ec2_hostname
+      return 0
+    else
+      return 1
     fi
 
 }
@@ -284,27 +289,41 @@ function exit_if_no_change_needed(){
 function main(){
   local change_batch_filepath=$(tempfile)
 
-  
-  use_value=${arg_value}
+  local use_value=${arg_value}
+  local use_type=${arg_type}
   if [ "${arg_value}" == "ec2-hostname" ]; then
     use_value=$(print_ec2_hostname)
-    if [ $arg_type != "CNAME" ]; then
-      echo "setting type to CNAME and value to ${use_value}"
-      $arg_type = "CNAME"
+    if [ $? != 0 ] ; then
+      echo "no value to set"
+      exit 1
+    fi
+    
+    if [ $use_type != "CNAME" ]; then
+      echo "setting type to ${use_type} and value to ${use_value}"
+      use_type="CNAME"
     else
       echo "setting value to ${use_value}"
     fi
   fi
 
+  use_name=${arg_name}
+  if [ "${arg_name}" == "local-FQDN" ]; then
+    use_name=$(print_local_FQDN)
+    if [ $? != 0 ] ; then
+      echo "no name to set"
+      exit 1
+    fi
+  fi
 
-  local recordjson=$(print_current_record ${arg_zone_id} ${arg_name})
+
+  local recordjson=$(print_current_record ${arg_zone_id} ${use_name})
   if [ "$recordjson" != "" ] ; then
     parse_record "$recordjson"
     exit_if_no_change_needed $use_value
 
-    print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $current_name $arg_type $arg_ttl ${use_value})" > $change_batch_filepath
+    print_2_CHANGES "$(print_DELETE)" "$(print_CREATE $current_name ${use_type} ${arg_ttl} ${use_value})" > $change_batch_filepath
   else  
-    print_1_CHANGES "$(print_CREATE ${arg_name} $arg_type $arg_ttl ${use_value})" > $change_batch_filepath
+    print_1_CHANGES "$(print_CREATE ${use_name} ${use_type} $arg_ttl ${use_value})" > $change_batch_filepath
   fi
 
   local aws_command="$(print_aws_command) route53 change-resource-record-sets"
