@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 # For release management, add names of branches that you'd like to build packages for here.
-branches="  default:unstable:0.2.$BUILD_NUMBER VOSA-49:lean:0.1.$BUILD_NUMBER  1.0.0:stable:1.0.0.$BUILD_NUMBER "
+branches="  unstable:unstable:0.1.$BUILD_NUMBER release:stable:1.0.0.$BUILD_NUMBER "
 
 repo_tmp_dir=$(mktemp --dry-run)
 ssh hudson@apt.vizrt.com "mkdir $repo_tmp_dir"
@@ -12,13 +12,13 @@ for name in $branches ; do
   suite=${name/*:}
   name=${name/:*}
   cd "$WORKSPACE" || exit
-  if [ "$HG_BRANCH_NAME" == "$name" ] ; then
+  if [ "$GIT_BRANCH_NAME" == "$name" ] ; then
     break;
   fi
 done
 
-if [ "$HG_BRANCH_NAME" != "$name" ] ; then
-  echo "Unable to build branch $HG_BRANCH_NAME, I only support $branches"
+if [ "$GIT_BRANCH_NAME" != "$name" ] ; then
+  echo "Unable to build branch $GIT_BRANCH_NAME, I only support $branches"
   exit 1
 fi
 
