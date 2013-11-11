@@ -12,6 +12,14 @@ The command will do nothing if there are no changes to be done.
 : --force \
 : -h|--help (this message)
 
+** Limitations
+
+This tool currently supports setting or replacing a named dns record.
+
+*** Route53
+- The name parameter corresponds to :: [[http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html][Route53 DNS Domain Name Format]]
+- The record and value parameters correspond to :: [[http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ResourceRecordTypes.html][Route53 Supported DNS Resource Record Types]]
+
 ** Installation
 This tool only works on various Linux systems and has only been tested on Ubuntu
 
