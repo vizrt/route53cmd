@@ -64,7 +64,7 @@ function print_current_record(){
   local zone_id=$1
   local name=$2
 
-  json=$($(print_aws_command) route53 list-resource-record-sets  --hosted-zone-id $zone_id --start-record-name  ${name} --max-items 1)
+  json=$($(print_aws_command) route53 list-resource-record-sets  --hosted-zone-id $zone_id --starting-token  ${name} --max-items 1)
 
   record_name=$(echo "$json" | sed -n -e 's/^.*"Name": "\([^"]*\)".*$/\1/p')
   match=$(echo "$record_name" | sed -n -e "/${name}/p") 
